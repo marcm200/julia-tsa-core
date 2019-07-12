@@ -1,11 +1,9 @@
 /*
-
 	My (Marc Meidlinger, July 2019)	implementation of the ingenious 
 	trustworthy Julia set algorithm from the article:
 	
 	"Images of Julia sets that you can trust" by Luiz Henrique de Figueiredo, Diego Nehab,
 	Jorge Stolfi, Joao Batista Oliveira from 2013
-
 */
 
 #include "math.h"
@@ -325,6 +323,8 @@ int32_t Data5::readRawBlowUp(
 		// no error, then computation has to start from scratch
 		return 0;
 	}
+	
+	printf("reading stored data ...\n");
 	
 	int32_t qlen,add;
 
@@ -1318,3 +1318,4 @@ int32_t main(int32_t argc,char** argv) {
 	
     return 0;
 }
+
