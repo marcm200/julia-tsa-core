@@ -1,7 +1,7 @@
 # julia-tsa-core
 Julia sets with a mathematical guarantee
 
-Implementation of the article:
+Implementation of the excellent article:
 ```
 "Images of Julia sets that you can trust"
 by Luiz-Henrique de Figueiredo, Diego Nehab, Jofge Stolfi, Joao Batista Oliveira-
