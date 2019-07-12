@@ -25,7 +25,8 @@ Command line tool to compute quadratic Julia sets with a mathematical guarentee.
 
 ## (0) Quick starting example:
 
-Compile main.cpp with any suitable C++ compiler supporting 64-bit integers.
+Compile main.cpp with any suitable C compiler supporting 64-bit integers (best with mathematical optimizations
+for speed enabled)
 
 Run `juliatsacore.exe 4096 -1 0 2 6` in a command prompt.
 
