@@ -1,14 +1,10 @@
 /*
 
-	My (Marc Meidlinger, July 2019)
-	implementation of the ingenious 
-	trustworthy Julia set algorithm
-	from the article:
+	My (Marc Meidlinger, July 2019)	implementation of the ingenious 
+	trustworthy Julia set algorithm from the article:
 	
-	"Images of Julia sets that you can trust"
-	by Luiz Henrique de Figueiredo, Diego Nehab,
-	Jorge Stolfi, Joao Batista Oliveira
-	from 2013
+	"Images of Julia sets that you can trust" by Luiz Henrique de Figueiredo, Diego Nehab,
+	Jorge Stolfi, Joao Batista Oliveira from 2013
 
 */
 
@@ -48,33 +44,33 @@ const uint32_t AR[] = {\
 	(uint32_t)(FF) << 30\
 };
 
-// constructing an array indexed by
-// relative pixel number to access the bits 
+// constructing an array indexed by relative pixel number to access the bits 
 // in the 32bit-integer
 CF(ARRAY_SQUARE_GRAY,SQUARE_GRAY)
 CF(ARRAY_SQUARE_WHITE,SQUARE_WHITE)
 CF(ARRAY_SQUARE_BLACK,SQUARE_BLACK)
 CF(ARRAY_SQUARE_GRAYPOTW,SQUARE_GRAY_POTENTIALLY_WHITE)
 
-// clearing a specific pixel's color via
-// a bitwise AND-mask
+const uint32_t uint32max=0b11111111111111111111111111111111;
+
+// clearing a specific pixel's color via bitwise AND-mask
 const uint32_t COLOR_CLEARMASK[] = {
-	(UINT32_MAX - (0b11)),
-	(UINT32_MAX - (0b11 << 2)),
-	(UINT32_MAX - (0b11 << 4)),
-	(UINT32_MAX - (0b11 << 6)),
-	(UINT32_MAX - (0b11 << 8)),
-	(UINT32_MAX - (0b11 << 10)),
-	(UINT32_MAX - (0b11 << 12)),
-	(UINT32_MAX - (0b11 << 14)),
-	(UINT32_MAX - (0b11 << 16)),
-	(UINT32_MAX - (0b11 << 18)),
-	(UINT32_MAX - (0b11 << 20)),
-	(UINT32_MAX - (0b11 << 22)),
-	(UINT32_MAX - (0b11 << 24)),
-	(UINT32_MAX - (0b11 << 26)),
-	(UINT32_MAX - (0b11 << 28)),
-	(UINT32_MAX - (0b11 << 30))
+	(uint32max - (0b11)),
+	(uint32max - (0b11 << 2)),
+	(uint32max - (0b11 << 4)),
+	(uint32max - (0b11 << 6)),
+	(uint32max - (0b11 << 8)),
+	(uint32max - (0b11 << 10)),
+	(uint32max - (0b11 << 12)),
+	(uint32max - (0b11 << 14)),
+	(uint32max - (0b11 << 16)),
+	(uint32max - (0b11 << 18)),
+	(uint32max - (0b11 << 20)),
+	(uint32max - (0b11 << 22)),
+	(uint32max - (0b11 << 24)),
+	(uint32max - (0b11 << 26)),
+	(uint32max - (0b11 << 28)),
+	(uint32max - (0b11 << 30))
 };
 
 #define CFALL(FF) \
@@ -85,8 +81,7 @@ const uint32_t COLOR_CLEARMASK[] = {
 		((FF) << 6)  | ((FF) << 4)  | ((FF) << 2)  | (FF)  \
 	)
 	
-// if all 16 consecutive pixels of a 32bit integer
-// have the same color
+// if all 16 consecutive pixels of a 32bit integer have the same color
 const uint32_t SQUARE_GRAY_16_CONSECUTIVE=CFALL(SQUARE_GRAY);
 const uint32_t SQUARE_GRAYPOTW_16_CONSECUTIVE=CFALL(SQUARE_GRAY_POTENTIALLY_WHITE);
 const uint32_t SQUARE_WHITE_16_CONSECUTIVE=CFALL(SQUARE_WHITE);
@@ -100,28 +95,23 @@ struct RGB4 {
 	uint8_t R,G,B,alpha;
 };
 
-// a rectangle in the complex plane - used
-// for a square and its bounding box
+// a rectangle in the complex plane - used for a square and its bounding box
 struct PlaneRect {
 	double x0,x1,y0,y1;
 };
 
-// for the reverse cell graph: position
-// of one tile
+// for the reverse cell graph: position of one tile
 struct Parent {
 	int32_t BX,BY;
 };
 
-// one reverse cell graph zile and its parents
-// (preimages before one iteration)
+// one reverse cell graph tile and its parents (preimages before the iteration)
 struct RevCGBlock {
 	int32_t howmany; 
-	// flag, whether this tile has to be checked
-	// (again) for gray pixels and their bounding
-	// box hits after one iteration
+	// flag, whether this tile has to be checked (again) for gray pixels and the bounding
+	// boxes' hits after one iteration
 	int32_t tovisit;
-	// the parents as a fixed-sized-array
-	// (future plans: memory manager)
+	// the parents as a fixed-sized-array/ (future plans: memory manager)
 	Parent parent[MAXPARENT];
 		
 	RevCGBlock();
@@ -137,7 +127,7 @@ struct Gray_in_row {
 	int32_t g0,g1;
 };
 
-// Hauptobjekt
+// main object
 struct Data5 {
 	uint32_t ** pixelrow;
 	Gray_in_row* gray;
@@ -155,31 +145,26 @@ struct Data5 {
 
 // globals
 
-double seedCre,seedCim; // als const nicht schneller
+double seedCre,seedCim; 
 Data5 *data5;
 double scaleRangePerPixel,scalePixelPerRange;
 int64_t countsquares_white,countsquares_gray;
 int64_t countsquares_black,countsquares_graypotw;
 int32_t SPLITAFTER;
-// region in the complex plane where all the 
-// currently still gray squares reside
+// region in the complex plane where all the currently still gray squares reside
 double planegrayx0,planegrayx1;
 double planegrayy0,planegrayy1;
 // region in screen coordinates
 int32_t encgrayx0,encgrayx1;
 int32_t encgrayy0,encgrayy1;
-// width of screen in pixel
-// must be a power of 2
+// width of screen in pixel, must be a power of 2
 int32_t SCREENWIDTH;
-// number of 32bit-integers a screen row holds
-// equal to (SCREENWIDTH >> 4)
+// number of 32bit-integers a screen row holds, equal to (SCREENWIDTH >> 4)
 int32_t MEMBREITE;
 int32_t RANGE0,RANGE1;
 // complte holds the same values as range
 double COMPLETE0,COMPLETE1;
-// for the low-resolution reverse cell graph
-// working on (usually) 64x64 pixel squares
-// or bigger
+// for the low-resolution reverse cell graph working on (usually) 64x64 pixel squares or bigger
 int32_t REVCGBITS,REVCGBLOCKWIDTH;
 int32_t REVCGmaxnumber,REVCGmaxnumberQ;
 
@@ -192,8 +177,7 @@ void compute(void);
 inline void getBoundingBoxfA(PlaneRect&,PlaneRect&);
 // constructing the low-level reverse cell-graph
 void construct_static_reverse_cellgraph(void);
-// squars that directly hit the special exterior
-// outside COMPLETE
+// squares that directly hit the special exterior outside COMPLETE
 void find_special_exterior_hitting_squares(void);
 // white and potentially-white cells wiul
 void propagate_white(void);
@@ -253,8 +237,7 @@ inline double maximumD(const double,const double,const double,const double);
 // struct definitions
 
 // RevCGBlock
-// static reverse cell graph at the given
-// SCREENWIDTH and REVCGBLOCKWIDTH
+// static reverse cell graph at the given SCREENWIDTH and REVCGBLOCKWIDTH
 
 RevCGBlock::RevCGBlock() {
 	howmany=0;
@@ -266,9 +249,7 @@ void RevCGBlock::addParent(const int32_t ax,const int32_t ay) {
 		exit(99);
 	}
 	
-	// if box lies outside
-	// the screen, it will never be
-	// marked as to be visitied, so the
+	// if box lies outside the screen, it will never be marked as to be visitied, so the
 	// block can be ignored
 	if (
 		(ax < 0) ||
@@ -283,13 +264,10 @@ void RevCGBlock::addParent(const int32_t ax,const int32_t ay) {
 }
 
 // struct data5
-// main struct: handles the pixels/squares
-// and the storing and reading
+// main struct: handles the pixels/squares and the storing and reading
 
-// saves the currently computed square data
-// (color) as a raw file for future continuation
-// of computing or blowing-up for the next
-// refinement level
+// saves the currently computed square data (color) as a raw file for future continuation
+// of computing or blowing-up for the next refinement level
 void Data5::saveRaw(const char* afn) {
 	char fn[1024];
 	
@@ -305,8 +283,7 @@ void Data5::saveRaw(const char* afn) {
 	fwrite(&encgrayy1,sizeof(encgrayy1),1,f);
 	fclose(f);
 	
-	// saving the actual pixel data in several
-	// files of at most 2 GB size
+	// saving the actual pixel data in several files of at most 2 GB size
 	int32_t fctr=0;
 	uint32_t slen=SPLITAFTER*MEMBREITE;
 	uint32_t spla=SPLITAFTER;
@@ -380,8 +357,7 @@ int32_t Data5::readRawBlowUp(
 	fread(&encgrayy1,sizeof(encgrayy1),1,f);
 	fclose(f);
 
-	// if image is to be doubled in width
-	// gray-coordinates have to be adjusted
+	// if image is to be doubled in width, gray-coordinates have to be adjusted
 	ENLARGEL(encgrayx0)
 	ENLARGEL(encgrayy0)
 	ENLARGER(encgrayx1)
@@ -402,8 +378,7 @@ int32_t Data5::readRawBlowUp(
 		fctr++;
 		sprintf(fn,"%s.raw_%04i",afn,fctr);
 		f=fopen(fn,"rb");
-		// when there is no more file existent
-		// exit loop
+		// when there is no more file existent, exit loop
 		if (!f) break;
 		uint32_t so_many_rows_in_file;
 		fread(&so_many_rows_in_file,sizeof(so_many_rows_in_file),1,f);
@@ -450,9 +425,7 @@ int32_t Data5::readRawBlowUp(
 }
 
 void Data5::saveBitmap4_trustworthily_downscaled_16fold(const char* afn) {
-	// saves a trustworthily downsized version
-	// of the image: 16-fold. 
-	// Assuming image width is below 2^20
+	// saves a trustworthily downsized version of the image: 16-fold. 
 	// image format is: 8 bit Bitmap
 
 	int32_t scr16 = SCREENWIDTH >> 4;
@@ -507,13 +480,11 @@ void Data5::saveBitmap4_trustworthily_downscaled_16fold(const char* afn) {
 
 	for(int32_t i=0;i<256;i++) write4(fbmp,pal[i].B,pal[i].G,pal[i].R,pal[i].alpha);
 			
-	// 16x16 pixels into one
-	// 16 rows and one 32bit-integer
+	// 16x16 pixels into one: 16 rows and each with one 32bit-integer
 	for(int32_t y=0;y<SCREENWIDTH;y+=16) {
 		for(int32_t x=0;x<scr16;x++) {
 			uint32_t f=pixelrow[y][x];
-			// 16 consecutive pixels starting
-			// at screen x*16,y
+			// 16 consecutive pixels starting at screen x*16,y
 			if (
 				(f==SQUARE_GRAY_16_CONSECUTIVE) ||
 				(f==SQUARE_GRAYPOTW_16_CONSECUTIVE) ||
@@ -536,9 +507,8 @@ void Data5::saveBitmap4_trustworthily_downscaled_16fold(const char* afn) {
 				};
 				
 			} else {
-				// if the first pixel row is
-				// not of one single color
-				// the 16x16 grid cannot be and
+				// if the first pixel row is not of one single color
+				// the 16x16 grid cannot be either and
 				// hence must be colored gray when downscaled
 				rgbz[x]=SQUARE_GRAY;
 			}
@@ -553,15 +523,13 @@ void Data5::saveBitmap4_trustworthily_downscaled_16fold(const char* afn) {
 }
 
 void Data5::saveBitmap4(const char* afn) {
-	// save the current pixels in several
-	// 4-bit-Bitmaps (each maximal 2 GB in size)
+	// save the current pixels in several 4-bit-Bitmaps (each maximal 2 GB in size)
 
 	int32_t width_of_one_image=SCREENWIDTH;
 	const int64_t max_filesize_per_bitmap=(int64_t)(1) << 31;
 	while (width_of_one_image > 16) {
 		int64_t memory_used=width_of_one_image;
-		// since storing 2 pixels per
-		// bitmap entry
+		// since storing 2 pixels per bitmap entry
 		memory_used *= (width_of_one_image >> 1); // 2 Pixel pro uint8_t
 		if (memory_used > max_filesize_per_bitmap) {
 			// image width too high => halven in
@@ -685,7 +653,9 @@ void Data5::saveBitmap4(const char* afn) {
 	delete[] rgbz;
 
 	printf("%I64d interior, %I64d exterior, %I64d (%.0lf%%) gray squares\n",
-		countsquares_black,countsquares_white,countsquares_gray+countsquares_graypotw,
+		countsquares_black,
+		countsquares_white,
+		countsquares_gray+countsquares_graypotw,
 		100.0*(double)(countsquares_gray+countsquares_graypotw)/(countsquares_black+countsquares_graypotw+countsquares_gray+countsquares_white));
 
 	if (countsquares_graypotw>0) {
@@ -704,11 +674,8 @@ Data5::Data5() {
 	SPLITAFTER = gesamt; 
 	if (SPLITAFTER > SCREENWIDTH) SPLITAFTER=SCREENWIDTH;
 
-	// allokate enough memory to store the
-	// necessary amount of 32 bit ints
-	// in as few continuous blocks as possible
-	// (avoiding allocating memory for each
-	// row)
+	// allokate enough memory to store the necessary amount of 32 bit ints
+	// in as few continuous blocks as possible (avoiding allocating memory for each row)
 	int32_t still_todo=SCREENWIDTH; 
 	int32_t y=0;
 	
@@ -749,10 +716,8 @@ Data5::~Data5() {
 
 // functions
 
-// one pixel transforming into a 2x2 grid
-// gray or gray-potentially-white will both
-// be set to gray. works on a 32bit-integer
-// hence 16 consecutive bits directly
+// one pixel transforming into a 2x2 grid, gray or gray-potentially-white will both
+// be set to gray. works on a 32bit-integer, hence 16 consecutive bits directly
 void copy_pixel_to_2x2grid(const uint32_t q,uint32_t* erg) {
 	int32_t eidx=0;
 	int32_t zbit=0;
@@ -773,17 +738,13 @@ void copy_pixel_to_2x2grid(const uint32_t q,uint32_t* erg) {
 }
 
 inline int32_t scrcoord_as_lowerleft(const double a) {
-	// calculating the screen coordinte of
-	// the pixel that contains the coordinate
-	// if the coordinate lies on an edge/corner
-	// (and belongs to more than one pixel)
-	// the pixel where it lies on the left,bottom
-	// edge/corner is returned
+	// calculating the screen coordinte of the pixel that contains the coordinate
+	// if the coordinate lies on an edge/corner (and belongs to more than one pixel)
+	// the pixel where it lies on the left,bottom edge/corner is returned
 	return (int)floor( (a - COMPLETE0) * scalePixelPerRange );
 }
 
-// maximum of 4 doubles. often used by the boundingbox
-// function
+// maximum of 4 doubles. often used by the boundingbox function
 inline double maximumD(const double a,const double b,const double c,const double d) {
 	double m=a;
 	if (b > m) m=b;
@@ -811,17 +772,12 @@ inline double maximumD(const double a,const double b) {
 }
 
 // IMPORTANT FUNCTION
-// - function that performs the iteration of
-// the quadratic case: z := z*z + seedC
-// - function can be replaced by any other
-// boundiong box generating routine to accommodate
-// for other types of iteration formulas
-// like z^3+c, z^6+c etc.
-// - CAVE: Care must be taken that the C++ double
-// floating point type used here can handle
+// - function that performs the iteration of the quadratic case: z := z*z + seedC
+// - function can be replaced by any other boundiong box generating routine to accommodate
+// for other types of iteration formulas like z^3+c, z^6+c etc.
+// - CAVE: Care must be taken that the C++ double floating point type used here can handle
 // the produced numbers to absolute accuracy
-// - expression is semi-automatically generated
-// and left un-optimized for ease of substitution
+// - expression is semi-automatically generated and left un-optimized for ease of substitution
 inline void getBoundingBoxfA(PlaneRect& A,PlaneRect& fA) {
 	fA.x0=minimumD(A.x0*A.x0,A.x1*A.x1)-maximumD(A.y0*A.y0,A.y1*A.y1)+seedCre;
 	fA.x1=maximumD(A.x0*A.x0,A.x1*A.x1)-minimumD(A.y0*A.y0,A.y1*A.y1)+seedCre;
@@ -901,26 +857,21 @@ void construct_static_reverse_cellgraph(void) {
 }
 
 void compute(void) {
-	// build low-level reverse cell graph
-	// with the current seed value
+	// build low-level reverse cell graph with the current seed value
 	construct_static_reverse_cellgraph();
 	
-	// if raw data file exists: read it and
-	// if necessary blow up the pixels 2fold
+	// if raw data file exists: read it and if necessary blow up the pixels 2fold
 	if (data5->readRawBlowUp("_in") <= 0) {
-		// data5 object is - no matter what
-		// data it holds - considered uninitialised
+		// data5 object is - no matter what data it holds - considered uninitialised
 		printf("searching for special exterior ... ");
 
-		// at the start: everything is considered
-		// gray
+		// at the start: everything is considered gray
 		encgrayx0=encgrayy0=0;
 		encgrayx1=encgrayy1=SCREENWIDTH-16;
 		planegrayx0=planegrayy0=COMPLETE0;
 		planegrayx1=planegrayy1=COMPLETE1;
 
-		// squares(pixels) whose bounding box
-		// lies completely in the special exterior
+		// squares(pixels) whose bounding box lies completely in the special exterior
 		find_special_exterior_hitting_squares();
 	}
 	
@@ -973,8 +924,7 @@ void find_special_exterior_hitting_squares(void) {
 					
 			getBoundingBoxfA(A16,bbxfA);
 
-			// does the 16x16 sqzare lie
-			// completely in the special exterior
+			// does the 16x16 sqzare lie completely in the special exterior
 			if (SQUARE_LIES_ENTIRELY_IN_SPECEXT(bbxfA)>0) {
 				// yes => all can be colored white
 				int32_t memx0=(x16 >> 4);			
@@ -985,8 +935,7 @@ void find_special_exterior_hitting_squares(void) {
 				continue;
 			}
 					
-			// now the individual points have
-			// to be checked
+			// now the individual points have to be checked
 			const int32_t yendebit=y16+16;
 			A.y0=y16*scaleRangePerPixel + COMPLETE0;
 			A.y1=A.y0 + scaleRangePerPixel;
@@ -1098,8 +1047,7 @@ void propagate_white(void) {
 					// some rows have no gray
 					if (xende < xanf) continue;
 			
-					// gray in that row lies
-					// outside of area to be checked
+					// gray in that row lies outside of area to be checked
 					if ( 
 						(x256 > xende) ||
 						( (x256+REVCGBLOCKWIDTH) < xanf) 
@@ -1295,7 +1243,7 @@ void coloring_interior_black(void) {
 	for(int32_t y=0;y<SCREENWIDTH;y++) {
 		const int32_t xanf=data5->gray[y].g0;
 		const int32_t xende=data5->gray[y].g1;
-		int32_t mem=-1 + xanf >> 4;
+		int32_t mem=-1 + (xanf >> 4);
 
 		for(int32_t x=xanf;x<=xende;x+=16) {
 			mem++; 
@@ -1318,7 +1266,7 @@ void coloring_interior_black(void) {
 }
 
 int32_t main(int32_t argc,char** argv) {
-	// argv: scrbreite seedreal seedimag rangeright tilebits
+	// argv: scrwith seedreal seedimag rangeright tilebits
 	if ( (argc<=1) || (sscanf(argv[1],"%i",&SCREENWIDTH) != 1) ) SCREENWIDTH=8192;
 	if (SCREENWIDTH < 256) SCREENWIDTH=256;
 	if ( (argc<=2) || (sscanf(argv[2],"%lf",&seedCre) != 1) ) seedCre=(double)12967936.0/33554432.0;
@@ -1335,14 +1283,13 @@ int32_t main(int32_t argc,char** argv) {
 	RANGE0=-RANGE1;
 	COMPLETE0=RANGE0;
 	COMPLETE1=RANGE1;
-	REVCGBITS=6;
 	REVCGBLOCKWIDTH=(1 << REVCGBITS);
 	if (SCREENWIDTH >= REVCGBLOCKWIDTH) {
 		REVCGmaxnumber=SCREENWIDTH >> REVCGBITS;
 	} else REVCGmaxnumber=1;
 	REVCGmaxnumberQ=REVCGmaxnumber*REVCGmaxnumber;
 
-	MEMBREITE=(SCREENWIDTH >> 4); // 16 Pixel pro INT32
+	MEMBREITE=(SCREENWIDTH >> 4); // 16 Pixel per 32 bit integer
 	SPLITAFTER=(int)floor( (double)(1 << 30) / MEMBREITE);
 
 	data5=new Data5;
@@ -1358,8 +1305,7 @@ int32_t main(int32_t argc,char** argv) {
 	// storing image(s)
 	printf("saving image ...\n");
 	data5->saveBitmap4("_tsa_juliaset");
-	// storing a trustworthily downscaled
-	// image
+	// storing a trustworthily downscaled image
 	if (SCREENWIDTH >= 16384) {
 		printf("downscaling 16-fold in a trustworthy manner ...\n");
 		data5->saveBitmap4_trustworthily_downscaled_16fold("_tsa_juliaset");
