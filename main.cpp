@@ -222,7 +222,7 @@ struct Blob {
 };
 
 struct Charmap {
-	int64_t xlen,ylen; // würde zwar int reichen, aber da man xlen*y macht, könnte man ausserhalb des Speichers laden
+	int64_t xlen,ylen; // wÃ¼rde zwar int reichen, aber da man xlen*y macht, kÃ¶nnte man ausserhalb des Speichers laden
 	int64_t memused;
 	uint8_t *cmp;
 	RGB4 palette[256];
@@ -384,7 +384,7 @@ void RevCGBlock::addParent(const int ax,const int ay) {
 	
 	if (parent == NULL) {
 		// Speicher allokieren
-		// geht über einen speziellen ArrayManager
+		// geht Ã¼ber einen speziellen ArrayManager
 		// die Anzahl wurde vorab bereits ja bestimmt
 		parent=parentmgr.getParentSpace(memused);
 		howmany=0;
@@ -1977,7 +1977,7 @@ void generateBasinImage(SCCData& ain,const char* afn) {
 	char pref[1024];
 	pref[0]=0;
 	if (anzbasin > 200) {
-		printf("NICHT möglich. Zuviele Basins gefunden.\n");
+		printf("NICHT mÃ¶glich. Zuviele Basins gefunden.\n");
 		printf("die meisten SIND GLEICHFARBIG.\n");
 		anzbasin=200;
 		strcpy(pref,"_FEHLER_ZUVIELE_BASINS_");
@@ -2213,7 +2213,7 @@ void periodicity(const char* fnbase) {
 		} // x
 	} // y
 	
-	// nun über das Bild gehen und Blobs aufbauen
+	// nun Ã¼ber das Bild gehen und Blobs aufbauen
 	anzblobs=0;
 	DBYTE blobaktiv=BLOBOFFSET-1;
 	DBYTE blobfertig=blobaktiv-1;
@@ -2681,16 +2681,11 @@ int32_t main(int32_t argc,char** argv) {
 	bitpower=2;
 	RANGE0=-2;
 	RANGE1=2;
-	SCREENWIDTH=1048;
-	REVCGBITS=6;
 	seedC0re=seedC1re=-1.0;
 	seedC0im=seedC0im=0.0;
 	FAKTORAre=FAKTORAim=0.0;
-	
-	// command line structure
-
 	REVCGBITS=6;
-	SCREENWIDTH=1024;
+	SCREENWIDTH=(1 << 10);
 	
 	for(int i=1;i<argc;i++) {
 		upper(argv[i]);
@@ -2742,11 +2737,21 @@ int32_t main(int32_t argc,char** argv) {
 		} else if (strstr(argv[i],"C=")==argv[i]) {
 			double r0,r1,i0,i1; // not NTYP
 			// command line parameters are always considered double no matter the datatype used
-			if (sscanf(&argv[i][2],"%lf,&lf,&lf,&lf",&r0,&r1,&i0,&i1) == 4) {
+			if (sscanf(&argv[i][2],"%lf,%lf,%lf,%lf",&r0,&r1,&i0,&i1) == 4) {
 				seedC0re=floor(r0*DENOM225)/DENOM225;
 				seedC1re=floor(r1*DENOM225)/DENOM225;
+				if (seedC0re > seedC1re) {
+					double a=seedC0re;
+					seedC0re=seedC1re;
+					seedC1re=a;
+				}
 				seedC0im=floor(i0*DENOM225)/DENOM225;
 				seedC1im=floor(i1*DENOM225)/DENOM225;
+				if (seedC0im > seedC1im) {
+					double a=seedC0im;
+					seedC0im=seedC1im;
+					seedC1im=a;
+				}
 			} else
 			if (sscanf(&argv[i][2],"%lf,%lf",&r0,&i0) == 2) {
 				seedC0re=seedC1re=floor(r0*DENOM225)/DENOM225;
