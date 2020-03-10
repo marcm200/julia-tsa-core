@@ -13,7 +13,7 @@ by Luiz-Henrique de Figueiredo, Diego Nehab, Jofge Stolfi, Joao Batista Oliveira
 
 ## Purpose of this C++-code:
 
-Command line tool to compute polynomial Julia sets of the form z^n+A*z+c for degree 2 to 6 with a mathematical guarentee, their immediate
+Command line tool to compute polynomial Julia sets of the form z^n+A*z+c for degree 2 to 8 with a mathematical guarentee, their immediate
 and attraction basins of cycles and the periodic points.
 
 ### Disclaminer
@@ -42,6 +42,11 @@ Start executable (assuming it is called juliatsacore_d.exe throughout README - d
 other types see (1)) by entering in a command prompt:
 
 `juliatsacore_d.exe func=z3azc len=10 cmd=period,pp a=1.25,0 c=0,0.025 range=4` 
+
+if memory is not an issue, use:
+
+`juliatsacore_d.exe func=z3azc revcg=4 precompute=8 len=10 cmd=period,pp a=1.25,0 c=0,0.025 range=4` 
+which allocates 8 GB of memory to store intermediate reusable results.
 
 The output are 4 files, all leading with _L10__z3azc_c_ia_0_0_x_0.02499997615814209_0.02499997615814209_A_1.25_0`.
 The file ending in `.raw` stores the internal data for each pixel.
@@ -95,9 +100,10 @@ at the start of the source code:
 
 `#define _DOUBLE`
 `#define _LONGDOUBLE`
-`#define _F107`
-`#define _FPA`
 `#define _QUADMATH`
+`#define _FPA`
+`#define _F107`
+`#define _F161`
 
 and then recompiling the software.
 
@@ -107,6 +113,8 @@ F107 is Robert Munafo's f107 double-double datatype, which is quite fast (about 
 If those are commented in, the files f107_o.cpp and f107_o.h need to be downloaded from
 https://mrob.com/pub/math/f161.html#source
 Make sure to comment out approximate computation: `//#define F107_APPROX 1`
+
+F161 is the respective triple-double type by Robert Munafo. F107 notion apply.
 
 The main routine is `compute()`, the main struct is `data5` and the most important variables are `SCREENWIDTH`
 and `seedC0re`, `seedC0im`, `seedC1re`, `seedC1im` and `FAKTORAre`, `FAKTORAim`.
@@ -198,13 +206,31 @@ Then start the software again with double the screen width, i.e. len=12:
 
 The software uses the already computed image to build a bigger version. Afterwards delete `_in.raw`.
 
+(d) Splitting a cycle
+
+Using the 2-iterate function, it is possible to split even-length cycles in the quadratic case into 2 smaller cycles.
+
+`juliatsacore_fpa.exe revcg=4 precompute=16 func=2itz2c len=15 cmd=period,m3 range=2 c=-0.22412109375,-0.75439453125`
+
+Note, this command allocates 16 GB of memory to store bounding boxes (more precisely the pixels they intersect with) for
+reusage. If memory is not sufficient, remove the precompute=16 part.
+
+Note, the computation of level 16 with that command is quite slow and should be done in an increasing manner, starting with .e.g.
+level 12. 
+
+The same Julia set can be computed with:
+
+`juliatsacore_d.exe revcg=4 func=z2c len=15 cmd=period range=2 c=-0.22412109375,-0.75439453125`
+
 
 ## (3) Command-line parameters;
 
 `FUNC=string` (if not provided, standard value is Z2C)
 The desired polynomial to use. Implemented are z2azc, z3azc ... until z6azc for the polynomials z^n+A*z+c, where
-the degree n is from 2 to 6 and the factor A is a complex number. For backward compatibility a special function
+the degree n is from 2 to 8 and the factor A is a complex number. For backward compatibility a special function
 FUNC=z2c for z^2+c is also implemented.
+
+Function 2ITZ2C is a 2-iterate version of the classic z^2+c, i.e. (z^2+c)^2+c that allows for cycle splitting.
 
 `CMD=string` (standard value CALC)
 1. CMD=CALC: The software computes the set, saves the image and the final data.
@@ -219,6 +245,24 @@ having non-rectangular point regions. Image saved is named `...periodic_points.b
 Note, that the union of all black regions contains the periodic points, however there can be more distinct black regions
 than actual periodic points.
 
+4. CMD=PERIOD,M3: A new periodicity method that detects solely immediate basins but at a low memory cost and is applicable for levels 19 and
+above.
+
+`CMD=FASTDTCHK` 
+The current data file _in.raw is loaded and every gray pixel is analyzed: the set of pixels its bounding box intersects with
+is both computed with a sufficient datatype (the number type, the compiled executable owns) and once with C++ double. If both
+are identical among the image, double can safely be used to obtain a mathematically gauranteed image - but in much
+less time.
+
+E.g. if FPA is needed to provide sufficient precision, test this against double using the already correct level 16 data,
+so rename L16_....raw to _in.raw
+
+'juliatsacore_fpa cmd=fastdtchk len=17 func=...`
+
+If test is passed (output on screen and stored textfile named `_L17_...PASSED` or `_FAILED`), the image itself can be computed with:
+
+`juliatsacore_d cmd=period,m3 len=17 func=..`
+
 `LEN=integer` (standard value 10)
 The screen width is set to 2^integer pixel.
 Images must be at least 2^8 pixels and can go up to
@@ -231,15 +275,23 @@ Sets the seed value: double1 as real part, double2 as imaginary part.
 Sets the seed value to a complex interval: The real part being [double1..double2], the imaginary part
 being [double3..double4]
 
+`Cd=x,y`
+x,y are int32_t values that are used to denote the complex number x*2^-25 + i*y*2^-25
+
+`Cd=x0,x1,y0,y1` similar
+
 `A=double1,double2`
 Sets the degree-1 coefficiant accordingly.
+
+`Àd=x,y`
+Denotes A=x*2^-25 + i*y*2^-25
 
 <b>Note</b> that real numbers given in the command line as parameters are always treated as C++ double, no matter 
 what underlying data type is used in the binary.
 
 `RANGE=integer` (standard value 2)
 The complex plane where the whole Julia set is definitely contained is set to -integer .. +integer in
-both axis. Value must be a power of 2.
+both axis. Value must be a power of 2. The boundary itself cannot be part of the Julia set.
 
 `REVCG=integer` (standard value 4)
 The reverse cell graph to speeden computation up uses groups of 2^integer x 2^integer pixels.
@@ -252,6 +304,10 @@ Numbers below 4 are not possible.
 the program will terminate with a memory bad_alloc error message. Increasing the REVCG parameter
 will reduce memory usage.
 
+`PRECOMPUTE=N` (standard: flag not used)
+If memory is not an issue, N gigabytes of memory are assigned to precompute whole bounding boxes, i.e.
+their intersecting pixels and stores them for future use.
+
 
 ## (4) Contact
 
@@ -261,13 +317,13 @@ marcm200@freenet.de
 
 forum: https://fractalforums.org/fractal-mathematics-and-new-theories/28/julia-sets-true-shape-and-escape-time/2725
 
-Marc Meidlinger, January 2020
+Marc Meidlinger, March 2020
 
 ## (5) CONVERTING data
 
-This version uses a different format to store data on file.
+The data format is identical to 2.0.
 
-Raw data files from earlier versions (files `_in.raw_header, _in.raw_0001` etc) need to be converted into
+Raw data files from version 1.0 (files `_in.raw_header, _in.raw_0001` etc) need to be converted into
 the new file structure to be reused.
 
 Copy the raw-files of choice into a directory, rename them to _in.raw_header, _in.raw_0001 etc as if intending to
